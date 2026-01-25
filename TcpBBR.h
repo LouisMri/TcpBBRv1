@@ -131,7 +131,7 @@ public:
       MaxBandwidthFilter_t m_maxBwFilter;        //!< Maximum bandwidth filter
       uint32_t m_bandwidthWindowLength = 0; //!< A constant specifying the length of the BBR.BtlBw max
       BbrMode_t m_state = BBR_STARTUP; //!< Current state of BBR state machine                //!< filter window, default 10 packet-timed round trips.
-      uint32_t m_inflight = 0;
+
 
 
       double m_pacingGain; //!< The dynamic pacing gain factor
@@ -186,7 +186,8 @@ public:
 
       simtime_t m_lastRtt = SIMTIME_ZERO;
 
-      uint32_t m_bytesInFlight;
+      uint32_t m_bytesInFlight = 0;
+      uint32_t  ack_cnt;            /* number of acks */
 
       void setMode(BbrMode_t mode) { m_state = mode; } // method created for eventually setting the mode, not sure if will be used, in case not, remove later
       uint32_t stream;
@@ -194,7 +195,8 @@ public:
       uint32_t lastAckNo;
       uint32_t delivered;
       uint32_t m_initialCWnd;
-
+      uint32_t lastAcked = 0;
+      double m_deliveryRate = 0;
 
 //      uint32_t m_bytesLoss;    // already defined in TcpConnection.h
 
@@ -214,7 +216,7 @@ class INET_API TcpBBR : public TcpBaseAlg {
 
     TcpBBRStateVariables *& state;    // alias to TcpAlgorithm's 'state'
     // TCP queues
-    TcpSendQueue *sendQueue = nullptr;                // pointer to the  TcpSendQueue  class is necessary if i want to use a method or variable of that class!
+    TcpSendQueue *sendQueue = nullptr;       // pointer to the  TcpSendQueue  class is necessary if i want to use a method or variable of that class!
     TcpHeader *tcpHeader;    // lastAckNo
 //    TcpConnection *conn;
 
@@ -242,6 +244,7 @@ private:
 //    void initializeRNG(cRNG* rng) { state->m_uv = rng; }
     virtual void initialize() override;
     virtual void receivedDataAck(uint32 firstSeqAcked) override;
+    void segmentRetransmitted(uint32 fromseq, uint32 toseq) override;
     void dataSent(uint32_t fromseq) override;    // const Ptr<const TcpHeader>& ack
     virtual void processRexmitTimer(TcpEventCode& event) override;
 //    virtual void rttMeasurementComplete(simtime_t tSent, simtime_t tAcked);   //override      //  (const simtime_t& rtt)

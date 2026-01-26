@@ -186,28 +186,31 @@ void TcpBBR::initialize() {
 
     sendQueue = check_and_cast<TcpSendQueue*>(conn->getSendQueue());
 
+//     Initialize BBR States
+    CongestionStateSet(state);
 
     // Set initial BBR state and variables
-    InitPacingRate(state);
-
-    // === Enter BBR STARTUP mode ===
-    EnterStartup();
-
-    // === Initialize round counting ===
-    InitRoundCounting();
-
-
-    InitFullPipe();
+//    InitPacingRate(state);
+//
+//    // === Enter BBR STARTUP mode ===
+//    EnterStartup();
+//
+//    // === Initialize round counting ===
+//    InitRoundCounting();
+//
+//
+//    InitFullPipe();
 
 //    EnterStartup();
 }
 
 
 
-uint32_t TcpBBR::GetSsThresh(TcpBBRStateVariables *& state, uint32_t bytesInFlight)  // should maybe this method receive gain as input???
+uint32_t TcpBBR::GetSsThresh(TcpBBRStateVariables *& state) //, uint32_t bytesInFlight)  // should maybe this method receive gain as input???
 {
-    EV << "GetSsThresh: " << bytesInFlight << endl;
+    EV << "GetSsThresh: " << state << endl;
 //    uint32_t flight_size = std::min(state->snd_cwnd, state->snd_wnd);
+    SaveCwnd(state);
     state->m_bytesInFlight = InFlight(state, state->m_cWndGain);      //flight_size;
 
     return state->m_ssThresh;
@@ -298,6 +301,7 @@ void TcpBBR::InitPacingRate(TcpBBRStateVariables *& state)   // Ptr<TcpSocketSta
 
     // für nominalBandwidth, zwei optionen sind da, als datarate Datentyp definieren (und Datarate methode schreiben oder als "double" machen)
     double nominalBandwidth = (state->snd_cwnd) / Time.dbl();   // dies war der Datentyp DataRate typ in ns3, aber es ist wahrscheinlich besser, ihn als "double" zu definieren  *8
+
     state->m_pacingRate = state->m_pacingGain * nominalBandwidth;  //diese muss in (bit sein), also check später
 
     state->m_maxBwFilter = TcpBBRStateVariables::MaxBandwidthFilter_t(state->m_bandwidthWindowLength, nominalBandwidth, 0);
@@ -305,8 +309,9 @@ void TcpBBR::InitPacingRate(TcpBBRStateVariables *& state)   // Ptr<TcpSocketSta
 
     debugBBR();
 
-//    std::cout << "nominalBandwidth: " << nominalBandwidth << std::endl;
-//    std::cout << "m_pacingRate: " << state->m_pacingRate << std::endl;
+    std::cout << "Time: " << Time << std::endl;
+    std::cout << "nominalBandwidth/BottleneckBW: " << nominalBandwidth << std::endl;
+    std::cout << "PacingRate: " << state->m_pacingRate << std::endl;
 //    std::cout << "m_maxBwFilter in InitPacingRate (Best): " << state->m_maxBwFilter.GetBest() << std::endl;
 }
 
@@ -366,7 +371,7 @@ uint32_t TcpBBR::InFlight(TcpBBRStateVariables *& state, double gain)       // r
 //    state->m_bytesInFlight = (gain * estimatedBdp) + quanta;
 
     return inflight;   //(uint32_t)std::max(inflight, 4.0 * state->snd_mss);
-
+    debugBBR();
 
 }
 
@@ -540,8 +545,17 @@ void TcpBBR::CheckFullPipe(TcpBBRStateVariables *& state)   //const TcpRateOps::
 
 //    CheckAppStatus();  // might check if the object passed in this method is correct
 
+    std::cout << "MaxBW: " << state->m_maxBwFilter.GetBest() << std::endl;
+    std::cout << "FullBandwidth1: " << state->m_fullBandwidth << std::endl;
+    std::cout << "RoundStart?: " << state->m_roundStart << std::endl;
+    std::cout << "AppLimited?: " << state->isAppLimited << std::endl;
+    std::cout << "PipeFilled?: " << state->m_isPipeFilled << std::endl;
+
+    // 0 False/ 1 True
+
     if (state->m_isPipeFilled || !state->m_roundStart || state->isAppLimited)  //  rs.m_isAppLimited            Already Done!
     {
+        std::cout << "HELLO?: " << std::endl;
         return;
     }
 
@@ -549,17 +563,20 @@ void TcpBBR::CheckFullPipe(TcpBBRStateVariables *& state)   //const TcpRateOps::
     if (state->m_maxBwFilter.GetBest() >= state->m_fullBandwidth * 1.25)  // .GetBitRate()
     {
         state->m_fullBandwidth = state->m_maxBwFilter.GetBest();
+        std::cout << "FullBandwidth in Conditional statement: " << state->m_fullBandwidth << std::endl;
         state->m_fullBandwidthCount = 0;
         return;
     }
 
     state->m_fullBandwidthCount++;
+    std::cout << "FullBandwidthCount: " << state->m_fullBandwidthCount << std::endl;
+
     if (state->m_fullBandwidthCount >= 3)
     {
 
         EV_TRACE << "Pipe filled" << "\n";
         state->m_isPipeFilled = true;
-        CheckDrain(state);   // added 21.01.26
+//        CheckDrain(state);   // added 21.01.26
     }
 }
 
@@ -734,7 +751,9 @@ void TcpBBR::CongestionStateSet(TcpBBRStateVariables *& state) //, TcpCAEvent_t&
     {
         EV_TRACE << "CongestionStateSet triggered to CA_LOSS :: " << state << "\n";
         SaveCwnd(state);
-        state->m_roundStart = true;
+        state->m_roundStart = true;//             if (state->m_state == TcpBBRStateVariables::BBR_PROBE_RTT){
+        //                 HandleProbeRTT(state);
+        //             }
     }
     else if (state->lossRecovery)   // newState == TcpSocketState::CA_RECOVERY
     {
@@ -760,14 +779,14 @@ void TcpBBR::cwndEvent(TcpCAEvent_t& event, TcpConnection* conn, TcpBBRStateVari
         EV_WARN << "sendQueue is null when in cwndEvent, skipping pipe check.\n";
         return;
 
-    CheckAppStatus();   //state->snd_wnd
+//    CheckAppStatus();   //state->snd_wnd
 
     if (event == CA_EVENT_COMPLETE_CWR) {
         // EV_DEBUG << "CwndEvent: CA_EVENT_COMPLETE_CWR: " << event << endl;
         state->m_packetConservation = false; // if you have this member, else ignore
         RestoreCwnd(state);           // implement or replace with your logic
     }
-    else if (event == CA_EVENT_TX_START && state->isAppLimited == true) {       /* && app-limited logic here if available */   // && m_rateOps->GetConnectionRate().m_appLimited
+    else if (event == CA_EVENT_TX_START || state->isAppLimited == true ) {  // before was &&, but with or should work as well     /* && app-limited logic here if available */   // && m_rateOps->GetConnectionRate().m_appLimited
         // ToDo: Add app-limited detection if you have it in your state or conn
 
         EV_DEBUG << "CwndEvent: CA_EVENT_TX_START: " << event << endl;
@@ -780,8 +799,8 @@ void TcpBBR::cwndEvent(TcpCAEvent_t& event, TcpConnection* conn, TcpBBRStateVari
             SetPacingRate(state, 1); // implement or call your method
         }
         else if (state->m_state == TcpBBRStateVariables::BBR_PROBE_RTT) {
-            if (state->m_probeRttRoundDone && simTime().inUnit(SIMTIME_US) > state->m_probeRttDoneStamp.inUnit(SIMTIME_US)) {
-                state-> m_minRttStamp = simTime().inUnit(SIMTIME_US);
+            if (state->m_probeRttRoundDone && simTime() > state->m_probeRttDoneStamp) {   // .inUnit(SIMTIME_US)
+                state-> m_minRttStamp = simTime();          //.inUnit(SIMTIME_US);
                 RestoreCwnd(state);
                 ExitProbeRTT(); // implement or call your method
             }
@@ -806,7 +825,7 @@ void TcpBBR::processRexmitTimer(TcpEventCode& event)
     state->firstPartialACK = false;
     EV_INFO << "Loss Recovery terminated.\n";
 
-
+    GetSsThresh(state);
 
 
 //     The pacing gain is a key concept in BBR, representing the rate at which packets are sent into the network. During normal operation,
@@ -821,7 +840,7 @@ void TcpBBR::processRexmitTimer(TcpEventCode& event)
 //    SetPacingRate(state, state->m_pacingGain);
 //    updateCongestionWindow(); // before was this now update to UpdateTargetCwnd
 
-    state->m_ackedSacked = 0;
+//    state->m_ackedSacked = 0;
 
 
 
@@ -1061,7 +1080,9 @@ void TcpBBR::dataSent(uint32_t fromseq) {
     simtime_t sendtime = simTime();
     state->regions.clearTo(state->snd_una);
     state->regions.set(fromseq, state->snd_max, sendtime);
+    state->m_priorDelivered = state->m_delivered;
 
+    std::cout << "PriorDelivered in DataSent method: " << state->m_priorDelivered << std::endl;
 }
 
 
@@ -1268,14 +1289,25 @@ void TcpBBR::receivedDataAck(uint32 firstSeqAcked)
 
     // --- 1. Compute newlyAcked bytes ---
 
-    uint32 newlyAcked = firstSeqAcked > state->last_ack_sent
-                      ? firstSeqAcked - state->last_ack_sent
-                      : 0; // protect against out-of-order
-    state->last_ack_sent = firstSeqAcked;
+//        std::cout << "firstSeqAcked: " << firstSeqAcked << std::endl;
+//        std::cout << "bbrlast_ack_sent: " << state->bbrlast_ack_sent << std::endl;
 
-//    std::cout << "firstSeqAcked: " << firstSeqAcked << std::endl;
-//    std::cout << "last_ack_sent: " << state->last_ack_sent << std::endl;
-//    std::cout << "newlyAcked: " << newlyAcked << std::endl;
+        uint32 newly_Acked = 0;
+
+        if (seqGE(firstSeqAcked, state->bbrlast_ack_sent)) {
+            newly_Acked = firstSeqAcked - state->bbrlast_ack_sent;
+        }
+
+        state->bbrlast_ack_sent = firstSeqAcked;
+
+
+//    uint32 newlyAcked = firstSeqAcked > state->last_ack_sent   //state->last_ack_sent
+//                      ?  firstSeqAcked - state->last_ack_sent        // state->last_ack_sent
+//                      : 0; // protect against out-of-order
+//    state->last_ack_sent = firstSeqAcked;
+
+//        std::cout << "newlyAcked: " << newlyAcked << std::endl;                         // DEBUG
+
 
     // --- 2. RTT Measurement: ---
     const TcpSegmentTransmitInfoList::Item *found = state->regions.get(firstSeqAcked);
@@ -1283,33 +1315,41 @@ void TcpBBR::receivedDataAck(uint32 firstSeqAcked)
         simtime_t rttSample = simTime() - found->getFirstSentTime();
         state->m_interval = rttSample;
 
+//        std::cout << "m_interval: " <<  state->m_interval << std::endl;             // DEBUG
+
         if (state->m_minRtt == SIMTIME_ZERO || rttSample < state->m_minRtt)
             state->m_minRtt = rttSample;
         state->m_lastRtt = rttSample;
     }
 
-    if (state->m_interval > 0 && newlyAcked > 0) {
-        double bw_sample = (double)newlyAcked / state->m_interval; // bytes/sec
-        state->m_deliveryRate = bw_sample;
-        state->m_maxBwFilter.Update(bw_sample, simTime().inUnit(SIMTIME_MS));
+//    if (state->m_interval > 0 && newlyAcked > 0) {
+//        double bw_sample = (double)newlyAcked / state->m_interval; // bytes/sec
+////        state->m_deliveryRate = bw_sample;
+//        state->m_maxBwFilter.Update(bw_sample, simTime().inUnit(SIMTIME_MS));
+//
+////        state->m_deliveryRate = bw_sample;
+//        state->m_deliveryRate = (double)state->m_delivered / state->m_interval.dbl(); // bytes/sec   , sentBytes
+//    }
 
-//        state->m_deliveryRate = bw_sample;
-        state->m_deliveryRate = (double)state->sentBytes / state->m_interval.dbl(); // bytes/sec
-    }
+    state->m_deliveryRate = (double)state->m_delivered / state->m_interval.dbl(); // bytes/sec   , sentBytes
 
+
+//    UpdateBottleneckBandwidth(state);   // called from CongControl
 
           state->ack_cnt++;
-          state->m_ackedSacked = state->last_ack_sent + state->sackedBytes;
+          state->m_ackedSacked = newly_Acked + state->sackedBytes;
 
-         CongControl(state, state->sentBytes);
+         CongControl(state, newly_Acked);  // state->sentBytes
+//         state->m_priorDelivered = state->sentBytes;    Increased in sendData
 
              // Update pacing and target cwnd (if not handled in CongControl)
              SetPacingRate(state, state->m_pacingGain);
              UpdateTargetCwnd(state);
              conn->emit(cwndSignal, state->snd_cwnd);
 
-             if (state->m_state == TcpBBRStateVariables::BBR_PROBE_RTT)
-                 HandleProbeRTT(state);
+//             if (state->m_state == TcpBBRStateVariables::BBR_PROBE_RTT){     HandleProbeRTT is called also from CongControl();
+//                 HandleProbeRTT(state);
+//             }
 
              // === 9. Reset ACK timing and intervals for next sample ===
              state->time_lastAck = simTime();
@@ -1320,8 +1360,11 @@ void TcpBBR::receivedDataAck(uint32 firstSeqAcked)
 
 
        sendData(false);
+
+
        debugBBR();
 
+       ;
    }
 
 
@@ -1682,8 +1725,11 @@ double TcpBBR::calculateBDP() {                     // this method is not called
     // Example: bdp_ = pacing_rate_ * min_rtt_
     double max_bw = state->m_maxBwFilter.GetBest();
 //    double min_rtt = state->m_minRtt.dbl();
-   return  state->bdp_ = (max_bw * state->m_minRtt.dbl());           //min_rtt_
-   debugBBR();
+    state->bdp_ = (max_bw * state->m_minRtt.dbl());
+    debugBBR();
+
+    return state->bdp_;         //min_rtt_
+
 //    return state->pacing_rate_ * state->min_rtt_;
 }
 
@@ -1937,6 +1983,9 @@ void TcpBBR::UpdateRound(TcpBBRStateVariables *& state)   // , const TcpRateOps:
 {
     EV_DETAIL << "UpdateRound " << state << "\n";
 
+    std::cout << "PriorDelivered: " <<  state->m_priorDelivered << std::endl;             // DEBUG
+    std::cout << "NextRoundDelivered: " <<  state->m_nextRoundDelivered << std::endl;             // DEBUG
+
     if (state->m_priorDelivered >= state->m_nextRoundDelivered)
     {
         state->m_nextRoundDelivered = state->m_delivered;
@@ -1963,7 +2012,7 @@ void TcpBBR::UpdateBottleneckBandwidth(TcpBBRStateVariables *& state)   //  , co
 
     if (state->m_deliveryRate >= state->m_maxBwFilter.GetBest() || !state->isAppLimited)
     {
-        state->m_maxBwFilter.Update(state->m_deliveryRate, state->m_roundCount);
+        state->m_maxBwFilter.Update(state->m_deliveryRate, simTime().inUnit(SIMTIME_MS));  //state->m_roundCount
     }
 }
 
@@ -1998,13 +2047,13 @@ void TcpBBR::HandleProbeRTT(TcpBBRStateVariables *& state)
 
     SetAppLimited(state->m_bytesInFlight);      // how much is the m_bytesInFlight here and now? check if should be set
 
-    if (state->m_probeRttDoneStamp == 0 && state->m_bytesInFlight <= state->m_minPipeCwnd)
+    if (state->m_probeRttDoneStamp == SIMTIME_ZERO && state->m_bytesInFlight <= state->m_minPipeCwnd)
     {
         state->m_probeRttDoneStamp = simTime() + state->m_probeRttDuration;
         state->m_probeRttRoundDone = false;
         state->m_nextRoundDelivered = state->m_delivered;
     }
-    else if (!(state->m_probeRttDoneStamp == 0))
+    else if (!(state->m_probeRttDoneStamp == SIMTIME_ZERO))
     {
         if (state->m_roundStart)
         {
@@ -2015,9 +2064,9 @@ void TcpBBR::HandleProbeRTT(TcpBBRStateVariables *& state)
             state->m_minRttStamp = simTime();
             RestoreCwnd(state);
 
-            debugBBR();
-
             ExitProbeRTT();
+
+            debugBBR();
 
         }
     }
@@ -2047,7 +2096,7 @@ void TcpBBR::HandleProbeRTT(TcpBBRStateVariables *& state)
 void TcpBBR::UpdateRTprop(TcpBBRStateVariables *& state)
 {
     EV_DETAIL << "UpdateRTprop " << state << "\n";
-    state->m_minRttExpired = simTime() > (state->m_minRttStamp + state->m_minRttFilterLen);
+    state->m_minRttExpired = simTime() > (state->m_minRttStamp + state->m_minRttFilterLen);  // .inUnit(SIMTIME_US)
     if (state->m_lastRtt >= 0 && (state->m_lastRtt <= state->m_minRtt || state->m_minRttExpired))   // m_lastRtt.Get().IsPositive()
     {
         state->m_minRtt = state->m_lastRtt;

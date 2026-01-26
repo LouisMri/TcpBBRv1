@@ -163,7 +163,7 @@ public:
       bool m_minRttExpired = false;         //!< A boolean recording whether the BBR.RTprop has expired
       simtime_t m_minRttFilterLen = SimTime(10, SIMTIME_S); //!< A constant specifying the length of the RTProp min
                                                             //!< filter window, default 10 secs.
-      simtime_t m_minRttStamp;              //!< The wall clock time at which the current BBR.RTProp sample was obtained
+      simtime_t m_minRttStamp = SIMTIME_ZERO;              //!< The wall clock time at which the current BBR.RTProp sample was obtained
       bool m_isInitialized = false;         //!< Set to true after first time initialization variables
 //      cUniform* m_uv = nullptr;             //!< Uniform Random Variable (use cUniform in OMNeT++)  // cUniform  ,  cRNG
 //      cRNG* m_uv;                 // if m_uv is declared as a cRNG type then it is used in the .cc from intuniform(), if declared as nullptr, gives error
@@ -197,6 +197,8 @@ public:
       uint32_t m_initialCWnd;
       uint32_t lastAcked = 0;
       double m_deliveryRate = 0;
+
+      uint32 bbrlast_ack_sent=0;
 
 //      uint32_t m_bytesLoss;    // already defined in TcpConnection.h
 
@@ -250,7 +252,7 @@ private:
 //    virtual void rttMeasurementComplete(simtime_t tSent, simtime_t tAcked);   //override      //  (const simtime_t& rtt)
 
     // Helper methods specific to BBR
-    uint32_t GetSsThresh(TcpBBRStateVariables *& state, uint32_t bytesInFlight);
+    uint32_t GetSsThresh(TcpBBRStateVariables *& state); //, uint32_t bytesInFlight);
 //    void updatePacingRate();   // method removed
 //    void updateCongestionWindow();
     double calculateBDP();

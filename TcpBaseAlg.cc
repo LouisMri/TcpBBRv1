@@ -106,7 +106,7 @@ simsignal_t TcpBaseAlg::numRtosSignal = cComponent::registerSignal("numRtos");  
 TcpBaseAlg::TcpBaseAlg() : TcpAlgorithm(),
     state((TcpBaseAlgStateVariables *&)TcpAlgorithm::state)
 {
-    rexmitTimer = persistTimer = delayedAckTimer = keepAliveTimer = nullptr;
+    rexmitTimer = persistTimer = delayedAckTimer = keepAliveTimer = pacingTimer = nullptr;
 }
 
 TcpBaseAlg::~TcpBaseAlg()
@@ -122,6 +122,8 @@ TcpBaseAlg::~TcpBaseAlg()
         delete cancelEvent(delayedAckTimer);
     if (keepAliveTimer)
         delete cancelEvent(keepAliveTimer);
+    if (pacingTimer)
+        delete cancelEvent(pacingTimer);
 }
 
 void TcpBaseAlg::initialize()
@@ -132,11 +134,13 @@ void TcpBaseAlg::initialize()
     persistTimer = new cMessage("PERSIST");
     delayedAckTimer = new cMessage("DELAYEDACK");
     keepAliveTimer = new cMessage("KEEPALIVE");
+    pacingTimer = new cMessage("PACING");
 
     rexmitTimer->setContextPointer(conn);
     persistTimer->setContextPointer(conn);
     delayedAckTimer->setContextPointer(conn);
     keepAliveTimer->setContextPointer(conn);
+    pacingTimer->setContextPointer(conn);
 }
 
 void TcpBaseAlg::established(bool active)
@@ -200,7 +204,7 @@ void TcpBaseAlg::connectionClosed()
     cancelEvent(persistTimer);
     cancelEvent(delayedAckTimer);
     cancelEvent(keepAliveTimer);
-
+    cancelEvent(pacingTimer);
     //Martino for BBR
 //    if (pacingTimer) {
 //        cancelEvent(pacingTimer);
@@ -218,10 +222,10 @@ void TcpBaseAlg::processTimer(cMessage *timer, TcpEventCode& event)
         processDelayedAckTimer(event);
     else if (timer == keepAliveTimer)
         processKeepAliveTimer(event);
-//    else if (timer == pacingTimer) {
+    else if (timer == pacingTimer) {
 //        pacingTimer = nullptr;
-//        sendData(false); // or your pacing logic
-//    }
+        sendData(false); // or your pacing logic
+    }
     else
         throw cRuntimeError(timer, "unrecognized timer");
 }

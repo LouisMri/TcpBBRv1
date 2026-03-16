@@ -368,14 +368,18 @@ void TcpVegas::dataSent(uint32 fromseq)
     // (this is why it is used: fromseq-state->iss)
 
     state->regions.clearTo(state->snd_una);
-    state->regions.set(fromseq, state->snd_max, simTime());
+//    state->regions.set(fromseq, state->snd_max, simTime());
+    // Commented due to a modification in the regions
+    // getter and setter of TcpSegmentTransmitInfoList, uncomment if eventually modify it again
 }
 
 void TcpVegas::segmentRetransmitted(uint32 fromseq, uint32 toseq)
 {
     TcpBaseAlg::segmentRetransmitted(fromseq, toseq);
 
-    state->regions.set(fromseq, toseq, simTime());
+//    state->regions.set(fromseq, toseq, simTime());
+    // Commented due to a modification in the regions
+    // getter and setter of TcpSegmentTransmitInfoList, uncomment if eventually modify it again
 }
 
 } // namespace tcp

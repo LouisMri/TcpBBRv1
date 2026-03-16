@@ -25,15 +25,18 @@ namespace inet {
 
 namespace tcp {
 
-void TcpSegmentTransmitInfoList::set(uint32_t beg, uint32_t end, simtime_t sentTime)
+
+// NEW modfied version
+void TcpSegmentTransmitInfoList::set(uint32_t beg, uint32_t end, simtime_t sentTime,
+                                     uint64_t priorDelivered, simtime_t priorDeliveredTime)
 {
     ASSERT(seqLess(beg, end));
     ASSERT(regions.empty() || (seqLE(regions.front().beg, beg) && seqLE(beg, regions.back().end)));
 
     if (regions.empty() || (regions.back().end == beg))
-        regions.push_back(Item(beg, end, sentTime, sentTime, 1));
+        regions.push_back(Item(beg, end, sentTime, sentTime, 1, priorDelivered, priorDeliveredTime));
     else if (end == regions.front().beg)
-        regions.push_front(Item(beg, end, sentTime, sentTime, 1));
+        regions.push_front(Item(beg, end, sentTime, sentTime, 1, priorDelivered, priorDeliveredTime));
     else {
         auto i = regions.begin();
         while (seqLE(i->end, beg))
@@ -41,7 +44,9 @@ void TcpSegmentTransmitInfoList::set(uint32_t beg, uint32_t end, simtime_t sentT
 
         ASSERT(seqLE(i->beg, beg));
         if (beg != i->beg) {
-            regions.insert(i, Item(i->beg, beg, i->firstSentTime, i->lastSentTime, i->transmitCount));
+            // Copy from existing Item
+            regions.insert(i, Item(i->beg, beg, i->firstSentTime, i->lastSentTime, i->transmitCount,
+                                   i->priorDelivered, i->priorDeliveredTime));
             i->beg = beg;
         }
         while (i != regions.end() && seqLE(i->end, end)) {
@@ -60,18 +65,65 @@ void TcpSegmentTransmitInfoList::set(uint32_t beg, uint32_t end, simtime_t sentT
                 ASSERT(beg == i->beg);
                 simtime_t firstSent = std::min(i->firstSentTime, sentTime);
                 simtime_t lastSent = std::max(i->lastSentTime, sentTime);
-//                if (firstSent > sentTime)
-//                    firstSent = sentTime;
-//                if (lastSent < sentTime)
-//                    lastSent = sentTime;
-                regions.insert(i, Item(beg, end, firstSent, lastSent, i->transmitCount + 1));
+                regions.insert(i, Item(beg, end, firstSent, lastSent, i->transmitCount + 1,
+                                       i->priorDelivered, i->priorDeliveredTime));
                 i->beg = end;
             }
             else
-                regions.push_back(Item(beg, end, sentTime, sentTime, 1));
+                regions.push_back(Item(beg, end, sentTime, sentTime, 1, priorDelivered, priorDeliveredTime));
         }
     }
 }
+
+
+//ORIGINAL
+//void TcpSegmentTransmitInfoList::set(uint32_t beg, uint32_t end, simtime_t sentTime)
+//{
+//    ASSERT(seqLess(beg, end));
+//    ASSERT(regions.empty() || (seqLE(regions.front().beg, beg) && seqLE(beg, regions.back().end)));
+//
+//    if (regions.empty() || (regions.back().end == beg))
+//        regions.push_back(Item(beg, end, sentTime, sentTime, 1));
+//    else if (end == regions.front().beg)
+//        regions.push_front(Item(beg, end, sentTime, sentTime, 1));
+//    else {
+//        auto i = regions.begin();
+//        while (seqLE(i->end, beg))
+//            ++i;
+//
+//        ASSERT(seqLE(i->beg, beg));
+//        if (beg != i->beg) {
+//            regions.insert(i, Item(i->beg, beg, i->firstSentTime, i->lastSentTime, i->transmitCount));
+//            i->beg = beg;
+//        }
+//        while (i != regions.end() && seqLE(i->end, end)) {
+//            ASSERT(beg == i->beg);
+//            if (i->firstSentTime > sentTime)
+//                i->firstSentTime = sentTime;
+//            if (i->lastSentTime < sentTime)
+//                i->lastSentTime = sentTime;
+//            i->transmitCount++;
+//            beg = i->end;
+//            ++i;
+//        }
+//
+//        if (beg != end) {
+//            if (i != regions.end()) {
+//                ASSERT(beg == i->beg);
+//                simtime_t firstSent = std::min(i->firstSentTime, sentTime);
+//                simtime_t lastSent = std::max(i->lastSentTime, sentTime);
+////                if (firstSent > sentTime)
+////                    firstSent = sentTime;
+////                if (lastSent < sentTime)
+////                    lastSent = sentTime;
+//                regions.insert(i, Item(beg, end, firstSent, lastSent, i->transmitCount + 1));
+//                i->beg = end;
+//            }
+//            else
+//                regions.push_back(Item(beg, end, sentTime, sentTime, 1));
+//        }
+//    }
+//}
 
 const TcpSegmentTransmitInfoList::Item *TcpSegmentTransmitInfoList::get(uint32_t seq) const
 {

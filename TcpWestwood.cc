@@ -294,14 +294,19 @@ void TcpWestwood::dataSent(uint32 fromseq)
 
     simtime_t sendtime = simTime();
     state->regions.clearTo(state->snd_una);
-    state->regions.set(fromseq, state->snd_max, sendtime);
+//    state->regions.set(fromseq, state->snd_max, sendtime);
+    // Commented due to a modification in the regions
+    // getter and setter of TcpSegmentTransmitInfoList, uncomment if eventually modify it again
+
 }
 
 void TcpWestwood::segmentRetransmitted(uint32 fromseq, uint32 toseq)
 {
     TcpBaseAlg::segmentRetransmitted(fromseq, toseq);
 
-    state->regions.set(fromseq, toseq, simTime());
+//    state->regions.set(fromseq, toseq, simTime());
+    // Commented due to a modification in the regions
+    // getter and setter of TcpSegmentTransmitInfoList, uncomment if eventually modify it again
 }
 
 } // namespace tcp

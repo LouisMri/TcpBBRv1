@@ -83,6 +83,8 @@ class INET_API TcpCubicStateVariables : public TcpBaseAlgStateVariables
 
 	uint32 segmentsAcked;
 
+	uint32 cubicDelivered = 0;
+	simtime_t lastTimeDelivered = SIMTIME_ZERO;
 
 
 	enum HybridSSDetectionMode {

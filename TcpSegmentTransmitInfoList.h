@@ -39,14 +39,19 @@ class INET_API TcpSegmentTransmitInfoList
         simtime_t firstSentTime;    // time of first sending
         simtime_t lastSentTime;    // time of last sending
         int transmitCount;    // num of transmissions
+        uint64_t priorDelivered;       // The total bytes delivered at send time for that segment.  (Martino for BBR)
+        simtime_t priorDeliveredTime;
 
       public:
-        Item(uint32_t beg, uint32_t end, simtime_t firstTime, simtime_t lastTime, int transmits) : beg(beg), end(end), firstSentTime(firstTime), lastSentTime(lastTime), transmitCount(transmits) {}
+//        Item(uint32_t beg, uint32_t end, simtime_t firstTime, simtime_t lastTime, int transmits) : beg(beg), end(end), firstSentTime(firstTime), lastSentTime(lastTime), transmitCount(transmits) {}
+        Item(uint32_t beg, uint32_t end, simtime_t firstTime, simtime_t lastTime, int transmits, uint64_t priorDelivered, simtime_t priorDeliveredTime) : beg(beg), end(end), firstSentTime(firstTime), lastSentTime(lastTime), transmitCount(transmits), priorDelivered(priorDelivered), priorDeliveredTime(priorDeliveredTime) {}
         uint32_t getBeg() const { return beg; }
         uint32_t getEnd() const { return end; }
         simtime_t getFirstSentTime() const { return firstSentTime; }
         simtime_t getLastSentTime() const { return lastSentTime; }
         int getTransmitCount() const { return transmitCount; }
+        uint64_t getPriorDelivered() const { return priorDelivered; }
+        simtime_t getPriorDeliveredTime() const { return priorDeliveredTime; }
 
         friend class TcpSegmentTransmitInfoList;
     };
@@ -54,7 +59,8 @@ class INET_API TcpSegmentTransmitInfoList
     TcpSegmentTransmitInfoItems regions;    // region[i].end == region[i+1].beg
 
   public:
-    void set(uint32_t beg, uint32_t end, simtime_t sentTime);    // [beg,end)
+//    void set(uint32_t beg, uint32_t end, simtime_t sentTime);    // [beg,end)
+    void set(uint32_t beg, uint32_t end, simtime_t sentTime, uint64_t priorDelivered, simtime_t priorDeliveredTime);
 
     /// returns pointer to Item, or nullptr if not found
     const Item *get(uint32_t seq) const;

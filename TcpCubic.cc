@@ -1059,7 +1059,11 @@ void TcpCubic::dataSent(uint32_t fromseq) {
 
     simtime_t sendtime = simTime();
     state->regions.clearTo(state->snd_una);
-    state->regions.set(fromseq, state->snd_max, sendtime);
+    state->regions.set(fromseq, state->snd_max, sendtime, state->cubicDelivered, state->lastTimeDelivered);
+                    // Before was Commented due to a modification in the regions
+                    // getter and setter of TcpSegmentTransmitInfoList, uncomment if eventually modify it again!
+                    // ### Now uncommented and included 2 new variables to be compliant with BBR Implementation
+
 }
 
 
@@ -1067,7 +1071,9 @@ void TcpCubic::segmentRetransmitted(uint32_t fromseq, uint32_t toseq)
 {
     TcpBaseAlg::segmentRetransmitted(fromseq, toseq);
 
-    state->regions.set(fromseq, toseq, simTime());
+//    state->regions.set(fromseq, toseq, simTime());
+                // Commented due to a modification in the regions
+                // getter and setter of TcpSegmentTransmitInfoList, uncomment if eventually modify it again
 }
 
 

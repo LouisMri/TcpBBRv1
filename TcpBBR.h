@@ -146,11 +146,11 @@ public:
       simtime_t m_probeRttDuration = SimTime(200, SIMTIME_MS); //!< A constant specifying the minimum duration for
                                                                //!< which ProbeRTT state, default 200 millisecs
       simtime_t m_probeRtPropStamp;  //!< The wall clock time at which the current BBR.RTProp sample was
-                                     //!< obtained.
+                                     //!< obtained.  // maybe could be removed later if redundant with "m_minRttStamp"
       simtime_t m_probeRttDoneStamp; //!< Time to exit from BBR_PROBE_RTT state
       bool m_probeRttRoundDone = false;  //!< True when it is time to exit BBR_PROBE_RTT
       bool m_packetConservation = false; //!< Enable/Disable packet conservation mode
-      uint32_t m_priorCwnd = 0;          //!< The last-known good congestion window
+      uint32_t m_priorCwnd;          //!< The last-known good congestion window
       bool m_idleRestart = false;        //!< When restarting from idle, set it true
       uint32_t m_targetCWnd = 0; //!< Target value for congestion window, adapted to the estimated BDP
       uint64_t m_fullBandwidth;      //!< Value of full bandwidth recorded
@@ -198,11 +198,12 @@ public:
       uint32_t lastAcked = 0;
       double m_deliveryRate = 0;
 
+      simtime_t lastDeliveredTime;
       uint32 bbrlast_ack_sent=0;
 
-//      uint32_t m_bytesLoss;    // already defined in TcpConnection.h
+//      uint32_t m_bytesLoss;    // already defined in TcpConnectionSackUtil.h
 
-
+      bool m_pacing = false;
 
 private:
 
@@ -221,7 +222,7 @@ class INET_API TcpBBR : public TcpBaseAlg {
     TcpSendQueue *sendQueue = nullptr;       // pointer to the  TcpSendQueue  class is necessary if i want to use a method or variable of that class!
     TcpHeader *tcpHeader;    // lastAckNo
 //    TcpConnection *conn;
-
+    cMessage *pacingTimer = nullptr;  // PacingTimer for BBR Martino
 
 
     Tcp *tcpMain = nullptr;    // Tcp module
@@ -246,7 +247,10 @@ private:
 //    void initializeRNG(cRNG* rng) { state->m_uv = rng; }
     virtual void initialize() override;
     virtual void receivedDataAck(uint32 firstSeqAcked) override;
+    void receivedDuplicateAck() override;
     void segmentRetransmitted(uint32 fromseq, uint32 toseq) override;
+    void handleMessage(cMessage *msg) ;
+    bool sendDataWithPacing(bool sendCommandInvoked) ;
     void dataSent(uint32_t fromseq) override;    // const Ptr<const TcpHeader>& ack
     virtual void processRexmitTimer(TcpEventCode& event) override;
 //    virtual void rttMeasurementComplete(simtime_t tSent, simtime_t tAcked);   //override      //  (const simtime_t& rtt)
@@ -262,7 +266,7 @@ private:
 //    void updateProbeRTT();
     void debugBBR();
 
-    void cwndEvent(TcpCAEvent_t& event, TcpConnection* conn, TcpBBRStateVariables *& state);
+    void cwndEvent(TcpBBRStateVariables *& state, TcpEventCode& event);  // TcpCAEvent_t& event, TcpConnection* conn,
 //    void restoreCwnd(TcpBBRStateVariables *& state);
     void SetPacingRate(TcpBBRStateVariables *& state, double gain);
     void ExitProbeRTT();

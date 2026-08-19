@@ -15,7 +15,7 @@ Place these files into your INET source directory at:
 
 ### 1. BBR Core Files
 * `TcpBBRv1.h` / `TcpBBRv1.cc`: Core BBRv1 algorithm logic, pacing, and state machine.
-* * `windowed-filter.h`: Implementation of Kathleen Nichols' windowed min/max filter algorithm. Tracks the top three estimates (best, second best, third best) over a sliding time window to efficiently track metrics like minimum RTT and maximum bandwidth.
+* `windowed-filter.h`: Implementation of Kathleen Nichols' windowed min/max filter algorithm. Tracks the top three estimates (best, second best, third best) over a sliding time window to efficiently track metrics like minimum RTT and maximum bandwidth.
 
 ### 2. Modified INET Core Files (`tcp/flavours/`)
 * `TcpSegmentTransmitInfoList.h` / `TcpSegmentTransmitInfoList.cc`: Updated the ´TcpSegmentTransmitInfoList´ method and signals to BBRv1.

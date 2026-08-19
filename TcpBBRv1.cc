@@ -175,7 +175,7 @@ void TcpBBRv1::initialize() {
 }
 
 
-uint32_t TcpBBRv1::GetSsThresh(TcpBBRv1StateVariables *& state) //, uint32_t bytesInFlight)  // should maybe this method receive gain as input???
+uint32_t TcpBBRv1::GetSsThresh(TcpBBRv1StateVariables *& state) //, uint32_t bytesInFlight) 
 {
     EV << "GetSsThresh: " << state << endl;
 //    uint32_t flight_size = std::min(state->snd_cwnd, state->snd_wnd);
@@ -189,7 +189,7 @@ uint32_t TcpBBRv1::GetSsThresh(TcpBBRv1StateVariables *& state) //, uint32_t byt
 
 
 
-void TcpBBRv1::SetStream(uint32_t stream)  // void, If defining this method as "void" then use the assignement of uint32_t = unit32_t
+void TcpBBRv1::SetStream(uint32_t stream)  
 {
     EV << "Stream: " << stream << "/n";
     state->m_rngStream = stream;
@@ -248,11 +248,11 @@ void TcpBBRv1::InitPacingRate(TcpBBRv1StateVariables *& state)
 void TcpBBRv1::SetPacingRate(TcpBBRv1StateVariables *& state, double gain)
 {
     // Calculate the rate (bit/s)
-    double  maxBw = state->m_maxBwFilter.GetBest(); // You need to implement this   ; uint64_t
+    double  maxBw = state->m_maxBwFilter.GetBest(); 
     double rate = gain * maxBw;
-    rate *= (1.0 - state->m_pacingMargin); // m_pacingMargin → pacing_margin in your struct
+    rate *= (1.0 - state->m_pacingMargin); // m_pacingMargin → pacing_margin in the struct
 
-    // Clamp to maxPacingRate if you have one, else skip this line, if PACING is not implemented it will not go here
+    // Clamp to maxPacingRate if there is, else skip this line
     if (state->m_maxPacingRate > 0)
         rate = std::min(rate, static_cast<double>(state->m_maxPacingRate));
 
@@ -272,38 +272,33 @@ void TcpBBRv1::SetPacingRate(TcpBBRv1StateVariables *& state, double gain)
 
 
 
-uint32_t TcpBBRv1::InFlight(TcpBBRv1StateVariables *& state, double gain)       // renamed here: m_inflight with m_bytesInFlight
+uint32_t TcpBBRv1::InFlight(TcpBBRv1StateVariables *& state, double gain)       
 {
     EV_INFO <<"InFlight=" << state << "/n";
     if (state->m_minRtt == SIMTIME_MAX)
     {
-//        state->m_bytesInFlight = state->snd_cwnd; // * state->m_initialCWnd;
 
-        return state->m_initialCWnd;             //    (state->snd_cwnd * state->snd_mss)   ---> state->m_initialCWnd , Maybe:   10 * state->snd_mss
+        return state->m_initialCWnd;             
     }
     double quanta = 3 * state->m_sendQuantum;
-    double estimatedBdp = state->m_maxBwFilter.GetBest() * state->m_minRtt.dbl(); // / 8.0;
+    double estimatedBdp = state->m_maxBwFilter.GetBest() * state->m_minRtt.dbl(); 
     state->bdp_ = estimatedBdp;
-    uint32_t inflight = (gain * estimatedBdp) + quanta;   // double
+    uint32_t inflight = (gain * estimatedBdp) + quanta;   
 
 //    std::cout << "inFlight: " << inflight << std::endl;    // DEBUG
 
     if (state->m_state == TcpBBRv1StateVariables::BBR_PROBE_BW && state->m_cycleIndex == 0)
     {
         debugBBR();
-//        inflight += 2 * state->snd_mss;
-//        state->m_bytesInFlight = (gain * estimatedBdp) + quanta + (2 * state->snd_mss);
 
-//        return (gain * estimatedBdp) + quanta + (2 * state->snd_mss); //state->m_bytesInFlight;
           inflight += 2.0 * state->snd_mss;
     }
 
     // Clamp to minimum pipe cwnd (typically 4*MSS)
     inflight = std::max(inflight, state->m_minPipeCwnd);
 
-//    state->m_bytesInFlight = (gain * estimatedBdp) + quanta;
 
-    return  inflight; //(uint32_t)std::ceil(inflight);;   //(uint32_t)std::max(inflight, 4.0 * state->snd_mss);
+    return  inflight; 
     debugBBR();
 
 }
@@ -316,7 +311,7 @@ void TcpBBRv1::EnterStartup()
 //    BBR_LOG_MODE("EnterStartup()");
 
     SetBbrState(state->BbrMode_t::BBR_STARTUP);
-    std::cout<< "Entered BBR_STARTUP mode at time T = " << simTime() << std::endl;         // DEBUG
+//    std::cout<< "Entered BBR_STARTUP mode at time T = " << simTime() << std::endl;         // DEBUG
 
     state->m_pacingGain = state->m_highGain;
     state->m_cWndGain = state->m_highGain;
@@ -326,10 +321,9 @@ void TcpBBRv1::EnterStartup()
 
 
 
-void TcpBBRv1::HandleRestartFromIdle(TcpBBRv1StateVariables *& state)   // , const TcpRateOps::TcpRateSample& rs
+void TcpBBRv1::HandleRestartFromIdle(TcpBBRv1StateVariables *& state)   
 {
-    EV_INFO <<"HandleRestartFromIdle state=" << state << "/n";
-//    uint32 flight_size = state->snd_nxt - state->snd_una;           //  std::min(state->snd_cwnd, state->snd_wnd);   //
+    EV_INFO <<"HandleRestartFromIdle state=" << state << "/n";          
 
     state->m_bytesInFlight = InFlight(state, state->m_cWndGain);       //flight_size;
 
@@ -337,10 +331,9 @@ void TcpBBRv1::HandleRestartFromIdle(TcpBBRv1StateVariables *& state)   // , con
         EV_WARN << "sendQueue is null, when in HandleRestartFromIdle skipping pipe check.\n";
         return;                      // To avoid calling CheckAppStatus
 
-//    CheckAppStatus();  // flight_size
 
-    if (state->m_bytesInFlight == 0U && state->isAppLimited)  // && rs.m_isAppLimited     FIXME TODO -: Include also the condition that checks: whether the rate sample is application-limited. Already Done!
-    {                                                                 // m_bytesInFlight == 0U
+    if (state->m_bytesInFlight == 0U && state->isAppLimited)  // Included also the check whether the rate sample is application-limited. 
+    {                                                                
         state->m_idleRestart = true;
         if (state->m_state == TcpBBRv1StateVariables::BBR_PROBE_BW)
         {
@@ -375,13 +368,13 @@ void TcpBBRv1::AdvanceCyclePhase()
     state->m_cycleIndex = (state->m_cycleIndex + 1) % GAIN_CYCLE_LENGTH;
     state->m_pacingGain = PACING_GAIN_CYCLE[state->m_cycleIndex];
 //    EV_INFO << "BBR: m_pacingGain = " << state->m_pacingGain << "\n";
-//    std::cout<< "BBR: m_pacingGain = "<< state->m_pacingGain << std::endl;     // Debug
+
     debugBBR();
 }
 
 
 
-bool TcpBBRv1::IsNextCyclePhase(TcpBBRv1StateVariables *& state)              //  , const TcpRateOps::TcpRateSample& rs
+bool TcpBBRv1::IsNextCyclePhase(TcpBBRv1StateVariables *& state)              
 {
     EV_TRACE << "IsNextCyclePhase(): state=" << state << "\n";
 
@@ -393,17 +386,16 @@ bool TcpBBRv1::IsNextCyclePhase(TcpBBRv1StateVariables *& state)              //
     else if (state->m_pacingGain > 1)
     {
         return isFullLength &&
-               (state->m_bytesLoss > 0 || state->m_priorInFlight >= InFlight(state, state->m_pacingGain));     // FIXME TODO -: Correct this by adding a call to the method receivedDuplicateAck or etwas, and store from there in a new variable the m_bytesLoss and m_priorInFlight
+               (state->m_bytesLoss > 0 || state->m_priorInFlight >= InFlight(state, state->m_pacingGain));     // FIXME TODO -: Correct eventually this by adding a call to the method receivedDuplicateAck oder etwas, and store from there in a new variable the m_bytesLoss and m_priorInFlight
     }
     else
     {
         return isFullLength || state->m_priorInFlight <= InFlight(state, 1);
     }
 }
-   // Frage: in which phase/states of a tcp connection should i record the m_bytesLoss and the m_priorInFlight, considering the standard phases like here:
 
 
-void TcpBBRv1::CheckCyclePhase(TcpBBRv1StateVariables *& state)   // , const TcpRateOps::TcpRateSample& rs
+void TcpBBRv1::CheckCyclePhase(TcpBBRv1StateVariables *& state)  
 {
     EV_TRACE << "CheckCyclePhase(): state=" << state << "\n";
 
@@ -446,19 +438,19 @@ void TcpBBRv1::SetAppLimited()
 
 
 
-void TcpBBRv1::CheckFullPipe(TcpBBRv1StateVariables *& state)   //const TcpRateOps::TcpRateSample& rs
+void TcpBBRv1::CheckFullPipe(TcpBBRv1StateVariables *& state)   
 {
     EV_TRACE << "CheckFullPipe(): state=" << state << "\n";
 
 
-    if (state->m_isPipeFilled || !state->m_roundStart || state->isAppLimited)  //  rs.m_isAppLimited            Already Done!
+    if (state->m_isPipeFilled || !state->m_roundStart || state->isAppLimited)  //  rs.m_isAppLimited           
     {
-//        std::cout << "HELLO?: " << std::endl;
+//        std::cout << "Are you here?: " << std::endl;
         return;
     }
 
     /* Check if Bottleneck bandwidth is still growing*/
-    if (state->m_maxBwFilter.GetBest() >= state->m_fullBandwidth * 1.25)  // .GetBitRate()
+    if (state->m_maxBwFilter.GetBest() >= state->m_fullBandwidth * 1.25)  
     {
         state->m_fullBandwidth = state->m_maxBwFilter.GetBest();
         conn->emit(maxBwSignal, (double)state->m_maxBwFilter.GetBest());
@@ -469,7 +461,7 @@ void TcpBBRv1::CheckFullPipe(TcpBBRv1StateVariables *& state)   //const TcpRateO
     }
 
     state->m_fullBandwidthCount++;
-    std::cout << "FullBandwidthCount: " << state->m_fullBandwidthCount << std::endl;
+ //   std::cout << "FullBandwidthCount: " << state->m_fullBandwidthCount << std::endl;
 
     if (state->m_fullBandwidthCount >= 3)
     {
@@ -488,7 +480,7 @@ void TcpBBRv1::EnterDrain()
 //    BBR_LOG_MODE("EnterDrain()");
 
     SetBbrState(state->BbrMode_t::BBR_DRAIN);
-    std::cout<< "Entered BBR_DRAIN mode at time t = " << simTime() << std::endl;         // DEBUG
+//    std::cout<< "Entered BBR_DRAIN mode at time t = " << simTime() << std::endl;         // DEBUG
 
     state->m_pacingGain = 1.0 / state->m_highGain;
     state->m_cWndGain = state->m_highGain;
@@ -504,32 +496,27 @@ void TcpBBRv1::EnterProbeBW()
     EV_TRACE << "EnterProbeBW(): state=" << state << "\n";
 
     SetBbrState(state->BbrMode_t::BBR_PROBE_BW);
-    std::cout<< "Entered BBR_PROBE_BW mode at time T =" << simTime() << std::endl;         // DEBUG
+//    std::cout<< "Entered BBR_PROBE_BW mode at time T =" << simTime() << std::endl;         // DEBUG
 
     state->m_pacingGain = 1;
     state->m_cWndGain = 2;
 
-//    EV_INFO << "BBR: m_uv RNG pointer = " << state->m_uv << "\n";       // To delete
-    std::cout<< "conn pointer =  "<< conn << std::endl;
+//    std::cout<< "conn pointer =  "<< conn << std::endl;
     ASSERT(conn != nullptr);
 
     cRNG *rng = conn->getRNG(state->m_rngStream);
-    std::cout<< "rng pointer =  "<< rng << std::endl;
+//    std::cout<< "rng pointer =  "<< rng << std::endl;
     ASSERT(rng != nullptr);
 
-    int rand_val = intuniform(rng, 0, GAIN_CYCLE_LENGTH - 2);  // 0-6    when initializing m_uv = nullptr this produce error.
+    int rand_val = intuniform(rng, 0, GAIN_CYCLE_LENGTH - 2);  
 
-//    EV_INFO << "BBR: m_uv RNG pointer = " << state->m_uv << "\n";                       // To delete
-    std::cout<< "Rand_Val =  "<< rand_val << std::endl;    // Debug     // To delete
 
     state->m_cycleIndex = GAIN_CYCLE_LENGTH - 1 - rand_val;
 
 //    EV_INFO << "BBR: m_cycleIndex = " << state->m_cycleIndex << "\n";
-    std::cout<< "BBR: m_cycleIndex =  "<< state->m_cycleIndex << std::endl;      // Debug
+
 
     ASSERT(state->m_cycleIndex >= 0 && state->m_cycleIndex < GAIN_CYCLE_LENGTH);
-//    if (state->m_cycleIndex < 0 || state->m_cycleIndex >= GAIN_CYCLE_LENGTH)
-//        state->m_cycleIndex = 0;
 
     AdvanceCyclePhase();
     debugBBR();
@@ -549,15 +536,11 @@ void TcpBBRv1::CheckDrain(TcpBBRv1StateVariables *& state)
 
     }
 
-    state->m_bytesInFlight = state->snd_max - state->snd_una;   // if this does not work i might need to tack
-                                                              // the actual/current Bytes in Flight via the state->m_bytesInFlight
+    state->m_bytesInFlight = state->snd_max - state->snd_una;   
+    // Track the actual/current Bytes in Flight via the state->m_bytesInFlight                                                          
 
-//    std::cout << "m_bytesInFlight: " << state->m_bytesInFlight << std::endl;    // DEBUG
-//    std::cout << "Drain_Target: " << InFlight(state, 1) << std::endl;    // DEBUG
 
-//    uint32 flight_size = std::min(state->snd_cwnd, state->snd_wnd);
-
-    if (state->m_state == TcpBBRv1StateVariables::BBR_DRAIN && state->m_bytesInFlight <= InFlight(state, 1))  // state->m_bytesInFlight
+    if (state->m_state == TcpBBRv1StateVariables::BBR_DRAIN && state->m_bytesInFlight <= InFlight(state, 1))  
     {
         debugBBR();
         EnterProbeBW();
@@ -574,12 +557,12 @@ void TcpBBRv1::ExitProbeRTT()
     if (state->m_isPipeFilled)
     {
         EnterProbeBW();
-        std::cout<< "Entered ProbeBW from ExitProbeRTT, at time T = " << simTime() << std::endl;         // DEBUG
+       // std::cout<< "Entered ProbeBW from ExitProbeRTT, at time T = " << simTime() << std::endl;         // DEBUG
     }
     else
     {
         EnterStartup();
-        std::cout<< "Entered StartUP from ExitProbeRTT, at time T = " << simTime() << std::endl;         // DEBUG
+       // std::cout<< "Entered StartUP from ExitProbeRTT, at time T = " << simTime() << std::endl;         // DEBUG
     }
 
     EV_INFO << "ExitProbeRTT t=" << simTime()
@@ -619,15 +602,15 @@ double TcpBBRv1::GetPacingGain()
 
 
 
-void TcpBBRv1::CongControl(TcpBBRv1StateVariables *& state, uint32 newlyAcked)   // const TcpRateOps::TcpRateConnection& rc, const TcpRateOps::TcpRateSample& rs
+void TcpBBRv1::CongControl(TcpBBRv1StateVariables *& state, uint32 newlyAcked)  
 {
     EV_TRACE << "CongControl(): state=" << state << "\n";
-    state->m_delivered += newlyAcked;   // rc.m_delivered
+    state->m_delivered += newlyAcked;   
     UpdateAppLimited();
     state->lastDeliveredTime = simTime();
 
-    UpdateModelAndState(state);                // , rs
-    UpdateControlParameters(state);            // , rs
+    UpdateModelAndState(state);                
+    UpdateControlParameters(state);            
 }
 
 
@@ -660,19 +643,6 @@ void TcpBBRv1::EnterRecovery()
 
 
 
-//void TcpBBRv1::MaybeExitRecovery(TcpBBRv1StateVariables *&state)
-//{
-//    if (!state->lossRecovery)
-//        return;
-//
-//    if (seqGE(state->snd_una, state->recover + 1)) {
-//        state->lossRecovery = false;
-//        state->dupacks = 0;
-//        state->m_packetConservation = false;
-//        RestoreCwnd(state);
-//        conn->emit(cwndSignal, state->snd_cwnd);
-//    }
-//}
 
 
 void TcpBBRv1::EnterLossRto()
@@ -682,7 +652,7 @@ void TcpBBRv1::EnterLossRto()
     if (state->m_state == TcpBBRv1StateVariables::BBR_PROBE_RTT) {
         RestoreCwnd(state);
         ExitProbeRTT();
-//        EnterProbeBW();
+
     }
 
     SaveCwnd(state);
@@ -715,14 +685,7 @@ void TcpBBRv1::OnTxStart(TcpBBRv1StateVariables *&state)
 }
 
 
-//void TcpBBRv1::processTimer(cMessage *msg)
-//{
-//    if (msg == pacingTimer) {
-//        sendData(false); // pacing-aware sendData()
-//        return;
-//    }
-//    TcpBaseAlg::processTimer(msg);
-//}
+
 
 
 
@@ -734,7 +697,7 @@ void TcpBBRv1::processRexmitTimer(TcpEventCode& event)
     if (event == TCP_E_ABORT)
         return;
 
-    // mark bytes lost if you want
+    // mark bytes lost 
     uint32 outstanding = state->snd_max - state->snd_una;
     state->m_bytesLoss += outstanding;
 
@@ -766,8 +729,7 @@ void TcpBBRv1::segmentRetransmitted(uint32 fromseq, uint32 toseq)
 
 bool TcpBBRv1::trySendOnePacedSegmentOrSchedule(bool sendCommandInvoked)
 {
-//    if (!state->m_pacing || state->m_pacingRate <= 0.0)
-//        return TcpBaseAlg::sendData(sendCommandInvoked);
+
 
     // If pacing disabled or pacing rate invalid → fallback
     if (!state->m_pacing || state->m_pacingRate <= 0)
@@ -813,7 +775,7 @@ bool TcpBBRv1::trySendOnePacedSegmentOrSchedule(bool sendCommandInvoked)
     if (!conn->isSendQueueEmpty()) {
         // bytes/sec pacingRate -> seconds per MSS
         double interval = double(state->snd_mss) / state->m_pacingRate;
-        interval = std::max(interval, 1e-6); // don’t go crazy small in sim
+        interval = std::max(interval, 1e-6); 
 
         if (!pacingTimer->isScheduled())
             conn->scheduleAt(simTime() + interval, pacingTimer);
@@ -840,7 +802,7 @@ bool TcpBBRv1::sendData(bool sendCommandInvoked)
         SetAppLimited();
     }
 
-    if (wasIdle && hasData /* && state->appLimited if you have */) {
+    if (wasIdle && hasData) {
         OnTxStart(state);
     }
 
@@ -872,140 +834,10 @@ void TcpBBRv1::dataSent(uint32_t fromseq) {
 }
 
 
-//void TcpBBRv1::receivedDataAck(uint32 firstSeqAcked)
-//{
-//    // inflight before ACK processing (ns-3: priorInFlight)
-////       uint32_t inflight_before = state->snd_max - state->snd_una;
-//       state->m_priorInFlight = state->snd_max - state->snd_una;
-//
-//       conn->emit(inflightSignal, (double)state->m_bytesInFlight);
-//
-//       // base TCP updates snd_una, rtt estimator, dupacks, etc.
-//       TcpBaseAlg::receivedDataAck(firstSeqAcked);
-//
-//       EV_WARN << "ACK t=" << simTime()
-//               << " firstSeqAcked=" << firstSeqAcked
-//               << " snd_una=" << state->snd_una
-//               << " snd_max=" << state->snd_max
-//               << " inflight=" << (state->snd_max - state->snd_una)
-//               << " cwnd=" << state->snd_cwnd
-//               << " dupacks=" << state->dupacks
-//               << " lossRecovery=" << state->lossRecovery
-//               << " packetCons=" << state->m_packetConservation
-//               << " mode=" << state->m_state
-//               << "\n";
-//
-//       uint32 newlyAcked = 0;
-//       if (seqGE(state->snd_una, firstSeqAcked))
-//           newlyAcked = state->snd_una - firstSeqAcked;
-//       if (newlyAcked == 0)
-//           return;
-//
-//       state->m_ackedSacked = newlyAcked;
-//       state->m_bytesInFlight = state->snd_max - state->snd_una;
-//
-//       if (state->afterRto)
-//           state->afterRto = false;
-//
-//       // Recovery handling FIRST
-//       if (state->lossRecovery) {
-//           if (!seqGE(state->snd_una, state->recover + 1)) {
-//               conn->retransmitOneSegment(false);
-//               restartRexmitTimer();
-//           }
-//           MaybeExitRecovery(state);
-//       }
-//
-//
-//
-//       // find a transmit record for sampling
-//       const TcpSegmentTransmitInfoList::Item *found = state->regions.get(firstSeqAcked);
-//       if (found != nullptr) {
-//           simtime_t now = simTime();
-//
-//           // RTT sample for this packet
-//           simtime_t rttSample = now - found->getLastSentTime();    // getFirstSentTime();
-//
-//           // DEBUG
-//           if (rttSample > 1.0) { // 1 second threshold, tune as needed
-//               EV_WARN << "Large RTT sample t=" << simTime()
-//                       << " rttSample=" << rttSample
-//                       << " txCount=" << found->getTransmitCount()
-//                       << " lastSent=" << found->getLastSentTime()
-//                       << " snd_una=" << state->snd_una
-//                       << " snd_max=" << state->snd_max
-//                       << "\n";
-//           }
-//
-//           // ns-3/Linux: sendElapsed vs ackElapsed, then interval = max(...)
-//           simtime_t sendElapsed = rttSample;
-//           simtime_t ackElapsed  = now - found->getPriorDeliveredTime();
-//
-//           // guard against zero/negative
-//           if (ackElapsed <= SIMTIME_ZERO)
-//               ackElapsed = sendElapsed;
-//
-//           state->m_interval = std::max(sendElapsed, ackElapsed);
-//
-//           // Update RTprop (minRTT) and lastRTT
-//               state->m_lastRtt = rttSample;
-////               conn->emit(lastRttSignal, state->m_lastRtt.dbl());
-//
-//
-//           // For debugging consistency
-//           state->m_priorDelivered = found->getPriorDelivered();
-//       }
-//
-//       else {
-//           // Fallback: still allow BBR to run, but sample will be weak
-//           state->m_interval = std::max(state->m_interval, SimTime(1, SIMTIME_MS));
-//       }
-//
-//
-//
-//       // inflight after ACK (ns-3: bytesInFlight is maintained by TCP; we recompute)
-//       uint32_t inflight_after = state->snd_max - state->snd_una;
-//       state->m_bytesInFlight = inflight_after;
-//       conn->emit(inflightSignal, (double)state->m_bytesInFlight);
-//
-//       // Main BBR control step (this should do: m_delivered += newlyAcked; UpdateModelAndState; UpdateControlParameters)
-//       CongControl(state, newlyAcked);
-//
-//       // Delivery rate sample (ns-3: rs.delivered / rs.interval)
-//       // Use per-packet priorDelivered if available
-//       if (found != nullptr && state->m_interval > SIMTIME_ZERO) {
-//
-//           uint64_t sampleDelivered = state->m_delivered - found->getPriorDelivered();         //state->m_priorDelivered;
-//           state->m_deliveryRate = sampleDelivered / state->m_interval.dbl(); // bytes/sec
-//
-////           conn->emit(deliveryRateSignal, (double)state->m_deliveryRate);
-//       }
-//
-//       conn->emit(cwndSignal, state->snd_cwnd);
-//
-//       // Drain gate (only needed if pacing isn't enforced)
-//       uint32_t actual_inflight = state->snd_max - state->snd_una;
-//       uint32_t drain_target = InFlight(state, 1.0);
-//
-////       if (state->m_state == TcpBBRv1StateVariables::BBR_DRAIN &&             // Commneted as won´t be needed if pacing works
-////           actual_inflight > drain_target)
-////       {
-////           EV_INFO << "BBR DRAIN: holding sends (inflight=" << actual_inflight
-////                   << " > target=" << drain_target << ")\n";
-////           debugBBR();
-////           return;
-////       }
-//
-//       sendData(false);
-//       debugBBR();
-//
-//       // optional: cleanup old regions AFTER sampling
-//       state->regions.clearTo(state->snd_una);
-//}
-//
+
 void TcpBBRv1::receivedDataAck(uint32 firstSeqAcked)
 {
-    // inflight before ACK processing (ns-3: priorInFlight)
+    // inflight before ACK processing (in ns-3 is priorInFlight)
        uint32_t inflight_before = state->snd_max - state->snd_una;
        state->m_priorInFlight = inflight_before;
 
@@ -1023,7 +855,7 @@ void TcpBBRv1::receivedDataAck(uint32 firstSeqAcked)
            return;
 
        // bytes acked/sacked this ACK (if no SACK: just newlyAcked)
-             state->m_ackedSacked = newlyAcked; // + sackedBytes if you implement it properly
+             state->m_ackedSacked = newlyAcked; // + sackedBytes if would be possible
 
              // Update bytes in flight after ACK
              state->m_bytesInFlight = state->snd_max - state->snd_una;
@@ -1037,7 +869,7 @@ void TcpBBRv1::receivedDataAck(uint32 firstSeqAcked)
              }
 
 
-////        MANAGED IN MaybeExitRecovery();
+//        MANAGED IN MaybeExitRecovery();
        // Exit fast recovery when ACK covers recover (RFC 3782)
        if (state->lossRecovery) {
            // If we haven't recovered everything up to 'recover', this is a partial ACK:
@@ -1068,7 +900,7 @@ void TcpBBRv1::receivedDataAck(uint32 firstSeqAcked)
            simtime_t now = simTime();
 
            // RTT sample for this packet
-           simtime_t rttSample = now - found->getLastSentTime();    // getFirstSentTime();
+           simtime_t rttSample = now - found->getLastSentTime();    
 
            // DEBUG
            if (rttSample > 1.0) { // 1 second threshold, tune as needed
@@ -1093,7 +925,6 @@ void TcpBBRv1::receivedDataAck(uint32 firstSeqAcked)
 
            // Update RTprop (minRTT) and lastRTT
                state->m_lastRtt = rttSample;
-//               conn->emit(lastRttSignal, state->m_lastRtt.dbl());
 
 
            // For debugging consistency
@@ -1104,14 +935,6 @@ void TcpBBRv1::receivedDataAck(uint32 firstSeqAcked)
            // Fallback: still allow BBR to run, but sample will be weak
            state->m_interval = std::max(state->m_interval, SimTime(1, SIMTIME_MS));
        }
-
-
-       // Exit fast recovery when done (must happen after base snd_una update)
-//       MaybeExitRecovery(state);
-
-//       // Clear afterRto on first forward progress
-//       if (state->afterRto)
-//           state->afterRto = false;
 
        // inflight after ACK (ns-3: bytesInFlight is maintained by TCP; we recompute)
        uint32_t inflight_after = state->snd_max - state->snd_una;
@@ -1125,10 +948,9 @@ void TcpBBRv1::receivedDataAck(uint32 firstSeqAcked)
        // Use per-packet priorDelivered if available
        if (found != nullptr && state->m_interval > SIMTIME_ZERO) {
 
-           uint64_t sampleDelivered = state->m_delivered - found->getPriorDelivered();         //state->m_priorDelivered;
+           uint64_t sampleDelivered = state->m_delivered - found->getPriorDelivered();         
            state->m_deliveryRate = sampleDelivered / state->m_interval.dbl(); // bytes/sec
 
-//           conn->emit(deliveryRateSignal, (double)state->m_deliveryRate);
        }
 
        conn->emit(cwndSignal, state->snd_cwnd);
@@ -1137,14 +959,6 @@ void TcpBBRv1::receivedDataAck(uint32 firstSeqAcked)
        uint32_t actual_inflight = state->snd_max - state->snd_una;
        uint32_t drain_target = InFlight(state, 1.0);
 
-//       if (state->m_state == TcpBBRTestStateVariables::BBR_DRAIN &&
-//           actual_inflight > drain_target)                                                 // COMMENTED for Pacing
-//       {
-//           EV_INFO << "BBR DRAIN: holding sends (inflight=" << actual_inflight
-//                   << " > target=" << drain_target << ")\n";
-//           debugBBR();
-//           return;
-//       }
 
        sendData(false);
        debugBBR();
@@ -1171,7 +985,7 @@ void TcpBBRv1::receivedDuplicateAck()
             if (state->m_state == TcpBBRv1StateVariables::BBR_PROBE_RTT) {
                 RestoreCwnd(state);
                 ExitProbeRTT();      // ExitProbeRTT should NOT jump to STARTUP (see below)
-//                EnterProbeBW();
+
             }
 
             conn->retransmitOneSegment(false);
@@ -1199,19 +1013,17 @@ void TcpBBRv1::receivedDuplicateAck()
 
 
 
-double TcpBBRv1::calculateBDP() {                     // this method is not called by anyone so far that is wwhy BDP = 0
+double TcpBBRv1::calculateBDP() {                    
     // Implement BBR's BDP estimation logic here
     // Example: bdp_ = pacing_rate_ * min_rtt_
     double max_bw = state->m_maxBwFilter.GetBest();
     conn->emit(maxBwSignal, (double)state->m_maxBwFilter.GetBest());
 
-//    double min_rtt = state->m_minRtt.dbl();
     state->bdp_ = (max_bw * state->m_minRtt.dbl());
     debugBBR();
 
-    return state->bdp_;         //min_rtt_
+    return state->bdp_;         
 
-//    return state->pacing_rate_ * state->min_rtt_;
 }
 
 
@@ -1224,7 +1036,7 @@ void TcpBBRv1::EnterProbeRTT()
 //    BBR_LOG_MODE("EnterProbeRTT()");
 
     SetBbrState(state->BbrMode_t::BBR_PROBE_RTT);
-    std::cout<< "Entered BBR_PROBE_RTT at time t = " << simTime() << std::endl;         // DEBUG
+//    std::cout<< "Entered BBR_PROBE_RTT at time t = " << simTime() << std::endl;         // DEBUG
 
     state->m_pacingGain = 1;
     state->m_cWndGain = 1;
@@ -1249,7 +1061,7 @@ void TcpBBRv1::SaveCwnd(TcpBBRv1StateVariables *& state)
     }
     else
     {
-        state->m_priorCwnd = std::max(state->m_priorCwnd, state->snd_cwnd);   //before was snd_cwnd
+        state->m_priorCwnd = std::max(state->m_priorCwnd, state->snd_cwnd);   
         conn->emit(cwndSignal, state->snd_cwnd);
     }
 
@@ -1270,11 +1082,11 @@ void TcpBBRv1::RestoreCwnd(TcpBBRv1StateVariables *& state)
 
 
 
-void TcpBBRv1::CheckProbeRTT(TcpBBRv1StateVariables *& state)    // , const TcpRateOps::TcpRateSample& rs
+void TcpBBRv1::CheckProbeRTT(TcpBBRv1StateVariables *& state)    
 {
     EV_DETAIL << "CheckProbeRTT " << state << "\n";
 
-    // Don't enter ProbeRTT during loss recovery or after RTO    // This was added as flag to not enter ProbeRTT if in loss state
+    // Don't enter ProbeRTT during loss recovery or after RTO    
     if (state->lossRecovery || state->afterRto)
         return;
 
@@ -1315,15 +1127,6 @@ void TcpBBRv1::UpdateTargetCwnd(TcpBBRv1StateVariables *& state)
 
     EV_DETAIL << "Updated m_targetCWnd: " << state->m_targetCWnd << "\n";
 
-
-//        // Grow (or shrink) snd_cwnd as per BBR mode
-//        if (state->m_state == TcpBBRv1StateVariables::BBR_STARTUP)
-//            state->snd_cwnd = std::min(state->snd_cwnd + newlyAcked, state->m_targetCWnd);
-//        else
-//            state->snd_cwnd = state->m_targetCWnd; // (or some other logic based on BBR phase)
-//
-//        state->snd_cwnd = std::max(state->snd_cwnd, state->m_minPipeCwnd);
-
 }
 
 
@@ -1335,21 +1138,20 @@ uint32_t TcpBBRv1::AckAggregationCwnd()
 
     if (state->m_extraAckedGain && state->m_isPipeFilled)
     {
-        // maxBw in bytes/sec (check units for your implementation!)
+        // maxBw in bytes/sec
         double maxBw = state->m_maxBwFilter.GetBest();
         conn->emit(maxBwSignal, (double)state->m_maxBwFilter.GetBest());
 
         // 0.1 seconds worth of max bandwidth:
         maxAggrBytes = static_cast<uint32_t>(maxBw * 0.1);
 
-//        maxAggrBytes = state->m_maxBwFilter.GetBest() / (10 * 8);   // GetBest().GetBitRate()
         aggrCwndBytes = state->m_extraAckedGain * std::max(state->m_extraAcked[0], state->m_extraAcked[1]);
         aggrCwndBytes = std::min(aggrCwndBytes, maxAggrBytes);
     }
     return aggrCwndBytes;
 }
 
-void TcpBBRv1::UpdateAckAggregation(TcpBBRv1StateVariables *& state)     // , const TcpRateOps::TcpRateSample& rs
+void TcpBBRv1::UpdateAckAggregation(TcpBBRv1StateVariables *& state)    
 {
     EV_DETAIL << "UpdateAckAggregation " << state << "\n";
     uint32_t expectedAcked;
@@ -1373,7 +1175,7 @@ void TcpBBRv1::UpdateAckAggregation(TcpBBRv1StateVariables *& state)     // , co
     }
 
     epochProp = simTime().inUnit(SIMTIME_S) - state->m_ackEpochTime.inUnit(SIMTIME_S);
-    expectedAcked = state->m_maxBwFilter.GetBest() * epochProp; //  / 8;   // .GetBitRate()  // ToDo: check if / 8 must be removed, to have it in Bytes
+    expectedAcked = state->m_maxBwFilter.GetBest() * epochProp; 
     conn->emit(maxBwSignal, (double)state->m_maxBwFilter.GetBest());
 
     if (state->m_ackEpochAcked <= expectedAcked ||
@@ -1394,7 +1196,7 @@ void TcpBBRv1::UpdateAckAggregation(TcpBBRv1StateVariables *& state)     // , co
     }
 }
 
-bool TcpBBRv1::ModulateCwndForRecovery(TcpBBRv1StateVariables *& state)     //  , const TcpRateOps::TcpRateSample& rs
+bool TcpBBRv1::ModulateCwndForRecovery(TcpBBRv1StateVariables *& state)    
 {
     EV_DETAIL << "ModulateCwndForRecovery " << state << "\n";
     if (state->m_bytesLoss > 0)
@@ -1405,7 +1207,7 @@ bool TcpBBRv1::ModulateCwndForRecovery(TcpBBRv1StateVariables *& state)     //  
 
     if (state->m_packetConservation)
     {
-        state->snd_cwnd = std::max(state->snd_wnd, state->m_bytesInFlight + state->m_ackedSacked);  //before was snd_cwnd
+        state->snd_cwnd = std::max(state->snd_wnd, state->m_bytesInFlight + state->m_ackedSacked);  
         conn->emit(cwndSignal, state->snd_cwnd);
         return true;
     }
@@ -1423,7 +1225,7 @@ void TcpBBRv1::ModulateCwndForProbeRTT(TcpBBRv1StateVariables *& state)
     debugBBR();
 }
 
-void TcpBBRv1::SetCwnd(TcpBBRv1StateVariables *& state)         // , const TcpRateOps::TcpRateSample& rs
+void TcpBBRv1::SetCwnd(TcpBBRv1StateVariables *& state)         
 {
     EV_DETAIL << "SetCwnd " << state << "\n";
 
@@ -1431,7 +1233,7 @@ void TcpBBRv1::SetCwnd(TcpBBRv1StateVariables *& state)         // , const TcpRa
      if (!state->m_ackedSacked)
          goto done; //return;
 
-    if (state->lossRecovery) // state->m_congState == TcpSocketState::CA_RECOVERY
+    if (state->lossRecovery) 
     {
         if (ModulateCwndForRecovery(state))
         {
@@ -1457,11 +1259,11 @@ void TcpBBRv1::SetCwnd(TcpBBRv1StateVariables *& state)         // , const TcpRa
     EV_DETAIL << "Congestion window updated. New value:" << state->snd_cwnd << "\n";
 
     // If we're in PROBE_RTT, enforce special cwnd rules
-//    if (state->m_state == TcpBBRv1StateVariables::BBR_PROBE_RTT){
+
   done:
 
   ModulateCwndForProbeRTT(state);
-//    }
+
 
 
     EV_WARN << "PC_CWND t=" << simTime()
@@ -1470,12 +1272,10 @@ void TcpBBRv1::SetCwnd(TcpBBRv1StateVariables *& state)         // , const TcpRa
             << "\n";
 }
 
-void TcpBBRv1::UpdateRound(TcpBBRv1StateVariables *& state)   // , const TcpRateOps::TcpRateSample& rs
+void TcpBBRv1::UpdateRound(TcpBBRv1StateVariables *& state)   
 {
     EV_DETAIL << "UpdateRound " << state << "\n";
 
-//    std::cout << "PriorDelivered: " <<  state->m_priorDelivered << std::endl;             // DEBUG
-//    std::cout << "NextRoundDelivered: " <<  state->m_nextRoundDelivered << std::endl;             // DEBUG
 
     if (state->m_priorDelivered >= state->m_nextRoundDelivered)
     {
@@ -1490,7 +1290,7 @@ void TcpBBRv1::UpdateRound(TcpBBRv1StateVariables *& state)   // , const TcpRate
     }
 }
 
-void TcpBBRv1::UpdateBottleneckBandwidth(TcpBBRv1StateVariables *& state)   //  , const TcpRateOps::TcpRateSample& rs
+void TcpBBRv1::UpdateBottleneckBandwidth(TcpBBRv1StateVariables *& state)   
 {
     EV_DETAIL << "UpdateBottleneckBandwidth " << state << "\n";
 
@@ -1503,12 +1303,12 @@ void TcpBBRv1::UpdateBottleneckBandwidth(TcpBBRv1StateVariables *& state)   //  
 
     if (state->m_deliveryRate >= state->m_maxBwFilter.GetBest() || !state->isAppLimited)
     {
-        state->m_maxBwFilter.Update(state->m_deliveryRate, state->m_roundCount);  //state->m_roundCount  ; simTime().inUnit(SIMTIME_MS)
+        state->m_maxBwFilter.Update(state->m_deliveryRate, state->m_roundCount);  
         conn->emit(maxBwSignal, (double)state->m_maxBwFilter.GetBest());
     }
 }
 
-void TcpBBRv1::UpdateModelAndState(TcpBBRv1StateVariables *& state)  //, const TcpRateOps::TcpRateSample& rs
+void TcpBBRv1::UpdateModelAndState(TcpBBRv1StateVariables *& state) 
 {
     EV_DETAIL << "UpdateModelAndState " << state << "\n";
 //    std::cout<< "Entered UpdateModelAndState, at time T = " << simTime() << std::endl;         // DEBUG
@@ -1521,7 +1321,7 @@ void TcpBBRv1::UpdateModelAndState(TcpBBRv1StateVariables *& state)  //, const T
     CheckProbeRTT(state);  //, rs
 }
 
-void TcpBBRv1::UpdateControlParameters(TcpBBRv1StateVariables *& state)  // , const TcpRateOps::TcpRateSample& rs
+void TcpBBRv1::UpdateControlParameters(TcpBBRv1StateVariables *& state)  
 {
     EV_DETAIL << "UpdateControlParameters " << state << "\n";
 //    std::cout<< "Entered UpdateControlParameters, at time T = " << simTime() << std::endl;         // DEBUG
@@ -1555,7 +1355,7 @@ void TcpBBRv1::HandleProbeRTT(TcpBBRv1StateVariables *& state)
             RestoreCwnd(state);
 
             ExitProbeRTT();
-            std::cout<< "Exited ProbeRTT from HandleProbeRTT, at time T = " << simTime() << std::endl;         // DEBUG
+ //           std::cout<< "Exited ProbeRTT from HandleProbeRTT, at time T = " << simTime() << std::endl;         // DEBUG
 
             debugBBR();
 
@@ -1570,9 +1370,9 @@ void TcpBBRv1::HandleProbeRTT(TcpBBRv1StateVariables *& state)
 void TcpBBRv1::UpdateRTprop(TcpBBRv1StateVariables *& state)
 {
     EV_DETAIL << "UpdateRTprop " << state << "\n";
-    state->m_minRttExpired = simTime() > (state->m_minRttStamp + state->m_minRttFilterLen);  // .inUnit(SIMTIME_US)
+    state->m_minRttExpired = simTime() > (state->m_minRttStamp + state->m_minRttFilterLen);  
 
-    if (state->m_lastRtt > SIMTIME_ZERO && (state->m_lastRtt <= state->m_minRtt || state->m_minRttExpired))   // m_lastRtt.Get().IsPositive()
+    if (state->m_lastRtt > SIMTIME_ZERO && (state->m_lastRtt <= state->m_minRtt || state->m_minRttExpired))   
     {
 
         state->m_minRtt = state->m_lastRtt;
@@ -1594,7 +1394,6 @@ void TcpBBRv1::debugBBR()
         << "ssthresh:           " << state->ssthresh << "\n"
         << "InFlight:           " << state->m_bytesInFlight << "\n"
         << "Max BW:             " << state->m_maxBwFilter.GetBest() << "\n" // (" << (isBitsPerSec ? "bits/s" : "bytes/s") << ")\n"
-//        << "Pacing Rate OLD:        " << state->pacing_rate_ << " bytes/s\n"
         << "Pacing Rate New:        " << state->m_pacingRate << " bytes/s\n"
         << "cwnd Gain:          " << state->m_cWndGain << "\n"
         << "pacing Gain:        " << state->m_pacingGain << "\n"
@@ -1609,10 +1408,7 @@ void TcpBBRv1::debugBBR()
         << "Prior InFlight:     " << state->m_priorInFlight << "\n"
         << "last RTT:           " << state->m_lastRtt << "\n"
         << "last Acked:         " << state->ackedBytes << "\n"
-//        << "Round Count:        " << state->round_count_ << "\n"
         << "ProbeRTT Mode?:     " << (state->m_state == TcpBBRv1StateVariables::BBR_PROBE_RTT ? "YES" : "NO") << "\n"
-//        << "Extra Acked Interval Start: " << state->extra_acked_interval_start_ << "\n"
-//        << "Extra Acked Delivered:      " << state->extra_acked_delivered_ << "\n"
         << "Extra Acked Gain:           " << state->m_extraAckedGain << "\n"
         << "Is Pipe Filled:             " << (state->m_isPipeFilled ? "YES" : "NO") << "\n"
         << "Send Quantum:               " << state->m_sendQuantum << "\n"

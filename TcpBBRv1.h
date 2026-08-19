@@ -61,33 +61,6 @@ public:
         MaxBandwidthFilter_t;
 
 
-
-
-
-
-//    typedef WindowedFilter<DatnominalBandwidthaRate,
-//                              MaxFilter<DataRate>,
-//                              uint32_t,
-//                              uint32_t>
-//           MaxBandwidthFilter_t;        //!< Definition of max bandwidth filter.
-
-
-
-//    uint32 v_recoverypoint;
-//    simtime_t v_cwnd_changed;    // last time cwnd changes because of a rtx.
-//
-//    simtime_t v_baseRTT;
-//    simtime_t v_sumRTT;    // sum of rtt's measured within one RTT
-//    int v_cntRTT;    // # of rtt's measured within one RTT
-//    uint32 v_begseq;    // register next pkt to be sent,for rtt calculation in receivedDataAck
-//    simtime_t v_begtime;    // register time for rtt calculation
-//
-//    simtime_t v_rtt_timeout;    // vegas fine-grained timeout
-//    simtime_t v_sa;    // average for vegas fine-grained timeout
-//    simtime_t v_sd;    // deviation for vegas fine-grained timeout
-
-//    TcpSegmentTransmitInfoList regions;
-
     simtime_t min_rtt_stamp_;
     simtime_t probe_rtt_done_stamp_;
     bool probe_rtt_round_done_;
@@ -95,10 +68,8 @@ public:
     bool idle_restart_;
     simtime_t extra_acked_interval_start_;
     uint32 extra_acked_delivered_;
-//    double pacing_gain_;
-//    double cwnd_gain_;
+
     double highGain;
-//    simtime_t min_rtt_;
 
     uint32 ssthresh;    ///< slow start threshold
     uint32 m_ssThresh;
@@ -167,8 +138,7 @@ public:
                                                             //!< filter window, default 10 secs.
       simtime_t m_minRttStamp = SIMTIME_ZERO;              //!< The wall clock time at which the current BBR.RTProp sample was obtained
       bool m_isInitialized = false;         //!< Set to true after first time initialization variables
-//      cUniform* m_uv = nullptr;             //!< Uniform Random Variable (use cUniform in OMNeT++)  // cUniform  ,  cRNG
-//      cRNG* m_uv;                 // if m_uv is declared as a cRNG type then it is used in the .cc from intuniform(), if declared as nullptr, gives error
+
       uint32_t m_rngStream = 0;
 
       //      uint64_t m_uv = intRand(0);
@@ -222,10 +192,8 @@ class INET_API TcpBBRv1 : public TcpBaseAlg {
 
     TcpBBRv1StateVariables *& state;    // alias to TcpAlgorithm's 'state'
     // TCP queues
-    TcpSendQueue *sendQueue = nullptr;       // pointer to the  TcpSendQueue  class is necessary if i want to use a method or variable of that class!
+    TcpSendQueue *sendQueue = nullptr;      
     TcpHeader *tcpHeader;    // lastAckNo
-//    TcpConnection *conn;
-//    cMessage *pacingTimer;  // PacingTimer for BBR Martino
 
 
     Tcp *tcpMain = nullptr;    // Tcp module
@@ -234,9 +202,6 @@ class INET_API TcpBBRv1 : public TcpBaseAlg {
     static simsignal_t inflightSignal;
     static simsignal_t maxBwSignal;
     static simsignal_t minRttSignal;
-//     static  simsignal_t deliveryRateSignal;
-//     static  simsignal_t lastRttSignal;
-//     static  simsignal_t cwndSig2;
 
 
     /** Create and return a TCPvegasStateVariables object. */
@@ -249,7 +214,7 @@ class INET_API TcpBBRv1 : public TcpBaseAlg {
 
 
 private:
-       simtime_t currentTime; // current time in simulation
+       simtime_t currentTime;
 
 
 
@@ -257,43 +222,30 @@ private:
     /** Ctor */
     TcpBBRv1();
 
-
-
-//    void initializeRNG(cRNG* rng) { state->m_uv = rng; }
     virtual void initialize() override;
     virtual void receivedDataAck(uint32 firstSeqAcked) override;
     void receivedDuplicateAck() override;
     void segmentRetransmitted(uint32 fromseq, uint32 toseq) override;
-//    void handleMessage(cMessage *msg) ;
-//    bool sendDataWithPacing(bool sendCommandInvoked);
+
     bool trySendOnePacedSegmentOrSchedule(bool sendCommandInvoked);
     bool sendData(bool sendCommandInvoked);
     void dataSent(uint32_t fromseq) override;    // const Ptr<const TcpHeader>& ack
     void EnterRecovery();
-//    void MaybeExitRecovery(TcpBBRv1StateVariables *&state);
+
     void EnterLossRto();
     void OnTxStart(TcpBBRv1StateVariables *&state);
     virtual void processRexmitTimer(TcpEventCode& event) override;
-//    virtual void rttMeasurementComplete(simtime_t tSent, simtime_t tAcked);   //override      //  (const simtime_t& rtt)
 
     // Helper methods specific to BBR
-    uint32_t GetSsThresh(TcpBBRv1StateVariables *& state); //, uint32_t bytesInFlight);
-//    void updatePacingRate();   // method removed
-//    void updateCongestionWindow();
+    uint32_t GetSsThresh(TcpBBRv1StateVariables *& state);
     double calculateBDP();
-//    void startProbeRTT();
-//    void handleProbeRTT();
-//    void sendProbePacket();
-//    void updateProbeRTT();
     void debugBBR();
 
-//    void cwndEvent(TcpBBRv1StateVariables *& state, TcpEventCode& event);  // TcpCAEvent_t& event, TcpConnection* conn,
-//    void restoreCwnd(TcpBBRv1StateVariables *& state);
     void SetPacingRate(TcpBBRv1StateVariables *& state, double gain);
     void ExitProbeRTT();
     void EnterProbeBW();
     void EnterDrain();
-    void SetBbrState(TcpBBRv1StateVariables::BbrMode_t mode); // BbrMode_t state  ,  TcpBBRv1StateVariables *& state
+    void SetBbrState(TcpBBRv1StateVariables::BbrMode_t mode); 
     void EnterStartup();
 
     void InitPacingRate(TcpBBRv1StateVariables *& state);
@@ -301,7 +253,7 @@ private:
     { return  SimTime(value, SIMTIME_MS); }
     double GetPacingGain();
     void AdvanceCyclePhase();
-    void SetStream(uint32_t stream);   //cRNG*
+    void SetStream(uint32_t stream);   
     void InitRoundCounting();
     void InitFullPipe();
     void HandleRestartFromIdle(TcpBBRv1StateVariables *& state);
@@ -311,8 +263,6 @@ private:
     void CheckFullPipe(TcpBBRv1StateVariables *& state);
 
 
-//    void CheckAppStatus();   // uint32 fromSeq
-
     void CheckDrain(TcpBBRv1StateVariables *& state);
     void UpdateRTprop(TcpBBRv1StateVariables *& state);
     void EnterProbeRTT();
@@ -321,11 +271,10 @@ private:
     void RestoreCwnd(TcpBBRv1StateVariables *& state);
 
     void UpdateAppLimited();
-    void SetAppLimited();  // uint32_t bytesInFlight
+    void SetAppLimited();  
 
 
     static const char* modeName(TcpBBRv1StateVariables::BbrMode_t mode);
-//    void CongestionStateSet(TcpBBRv1StateVariables *& state);  //, TcpCAEvent_t& newState, TcpEventCode& event);  //TcpCAEvent_t
     void CongControl(TcpBBRv1StateVariables *& state, uint32 firstSeqAcked);
     uint32_t GetBbrState();
     double GetCwndGain();

@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: 2026 Friedrich-Alexander University Erlangen-Nuernberg (FAU), Computer Science 7 - Computer Networks and Communication Systems
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /*
  * windowed-filter.h
  *
  *  Created on: Nov 27, 2025
- *      Author: martino
+ *      Author: Luigi Martino
  */
 
 // (For BBR implementation)

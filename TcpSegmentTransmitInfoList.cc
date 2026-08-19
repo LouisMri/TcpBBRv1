@@ -26,7 +26,10 @@ namespace inet {
 namespace tcp {
 
 
-//Edited
+// This file has been modified for Tcp BBRv1
+// Date: 2025
+// Author: Luigi Martino
+
 void TcpSegmentTransmitInfoList::set(uint32_t beg, uint32_t end, simtime_t sentTime,
                                      uint64_t priorDelivered, simtime_t priorDeliveredTime)
 {

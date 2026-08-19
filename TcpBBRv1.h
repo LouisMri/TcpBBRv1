@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: 2026 Friedrich-Alexander University Erlangen-Nuernberg (FAU), Computer Science 7 - Computer Networks and Communication Systems
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /*
  * TcpBBRv1.h
  *
  *  Created on: Apr 10, 2024
- *      Author: martino
+ *      Author: Luigi Martino
  */
 
 #ifndef INET_TRANSPORTLAYER_TCP_FLAVOURS_TCPBBR_H_

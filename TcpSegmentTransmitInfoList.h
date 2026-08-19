@@ -17,6 +17,10 @@
 // @author Zoltan Bojthe
 //
 
+// This file has been modified for Tcp BBRv1
+// Date: 2025
+// Author: Luigi Martino
+
 #ifndef __INET_TCPSEGMENTTRANSMITINFOLIST_H
 #define __INET_TCPSEGMENTTRANSMITINFOLIST_H
 

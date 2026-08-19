@@ -1,6 +1,6 @@
 # TCP BBRv1 Implementation for INET 4.2.2
 
-This repository provides a **TCP BBRv1** congestion control module compatible with **INET 4.2.2** for OMNeT++ 5.6.2.
+This repository provides a **TCP BBRv1** congestion control module compatible with **INET 4.2.2** for OMNeT++ 5.6.2. \\
 Developed as part of network engineering research at the Lab of Informatik 7, Friedrich-Alexander-Universität Erlangen-Nürnberg (FAU).
 
 > **Integration Notice**  

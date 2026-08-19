@@ -41,6 +41,7 @@ Place these files into your INET source directory at:
 ## Usage in Simulation:
 In your omnetpp.ini, configure your nodes to use TcpBBRv1:
 
-Ini, TOML
+```bash
 *.host*.tcp.typename = "Tcp"
 *.host*.tcp.tcpAlgorithmClass = "TcpBBRv1"
+```

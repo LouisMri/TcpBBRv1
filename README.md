@@ -1,6 +1,7 @@
 # TCP BBRv1 Implementation for INET 4.2.2
 
 This repository provides a **TCP BBRv1** congestion control module compatible with **INET 4.2.2** for OMNeT++ 5.6.2.
+Developed as part of network engineering research at the Lab of Informatik 7, Friedrich-Alexander-Universität Erlangen-Nürnberg (FAU).
 
 > **Integration Notice**  
 > Compiling and using this implementation requires modifications to existing base TCP files in the INET codebase, not just adding the new BBR files. Ensure you update the base files in `tcp/flavours` as described below.
@@ -14,7 +15,7 @@ Place these files into your INET source directory at:
 
 ### 1. BBR Core Files
 * `TcpBBRv1.h` / `TcpBBRv1.cc`: Core BBRv1 algorithm logic, pacing, and state machine.
-* * `windowed-filter.h`: Implementation of Kathleen Nichols' windowed min/max filter algorithm. Tracks the top three estimates (best, second best, third best) over a sliding time window to efficiently track metrics like minimum RTT and maximum bandwidth.
+* `windowed-filter.h`: Implementation of Kathleen Nichols' windowed min/max filter algorithm. Tracks the top three estimates (best, second best, third best) over a sliding time window to efficiently track metrics like minimum RTT and maximum bandwidth.
 
 ### 2. Modified INET Core Files (`tcp/flavours/`)
 * `TcpSegmentTransmitInfoList.h` / `TcpSegmentTransmitInfoList.cc`: Updated the ´TcpSegmentTransmitInfoList´ method and signals to BBRv1.
@@ -45,3 +46,7 @@ In your omnetpp.ini, configure your nodes to use TcpBBRv1:
 *.host*.tcp.typename = "Tcp"
 *.host*.tcp.tcpAlgorithmClass = "TcpBBRv1"
 ```
+
+## Authors:
+* **Luigi Martino** - https://github.com/LouisMri - luigi.martino@fau.de
+* Please contact us via email if you have any questions.

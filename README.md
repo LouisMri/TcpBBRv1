@@ -41,6 +41,14 @@ Select the algorithm in the simulation's `omnetpp.ini` for the sending TCP endpo
 *.client.tcp.tcpAlgorithmClass = "TcpBBRv1"
 ```
 
+## Publication and citation
+
+This BBRv1 implementation is associated with the following publication. The repository also includes later implementation improvements, so results from this revision should be identified separately from results reported in the paper.
+
+> Luigi Martino, Kai-Steffen Hielscher, and Reinhard German, “TCP BBR Congestion Control Evaluation in OMNeT++ INET,” *Performance Evaluation*, 2026. [https://doi.org/10.1016/j.peva.2026.102589](https://doi.org/10.1016/j.peva.2026.102589)
+
+If you use this code in research or a publication, please cite the paper above.
+
 ## Authors and license
 
 - Luigi Martino

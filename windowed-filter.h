@@ -38,7 +38,7 @@
 #ifndef INET_TRANSPORTLAYER_TCP_FLAVOURS_WINDOWED_FILTER_H_
 #define INET_TRANSPORTLAYER_TCP_FLAVOURS_WINDOWED_FILTER_H_
 
-#include <omnetpp.h>   // for simtime_t if you instantiate with simtime_t
+#include <omnetpp.h>   
 #include <cstdint>
 #include <type_traits>
 
